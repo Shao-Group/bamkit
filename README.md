@@ -33,5 +33,8 @@ The usage of `bamkit` is:
 ./bamkit <count|strand> <input.bam>
 ```
 
-Currently `bamkit` provides two functions, counting the aligned reads/base-pairs and 
-checking the strandness, of the given read alignment file, respectively.
+When the first parameter is set as count, `bamkit` shall do a statistic about the
+number of reads and basepairs aligned in the given bam file, and report the results
+to the standard output.
+When the first parameter is set as strand, `bamkit` shall check the strandness of the
+given bam file and report the results to the standard output.
