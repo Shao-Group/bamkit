@@ -3,15 +3,24 @@ To install bamkit from the source code, you need to first download/compile
 htslib, setup the corresponding environmental variables,
 and then compile the source code of bamkit.
 
+
 ## Install htslib
 Download htslib [(license)](https://github.com/samtools/htslib/blob/develop/LICENSE)
-from (http://www.htslib.org/) with version 1.2 or higher.
-Compile it to generate the htslib file `libhts.a`. 
-Set environment variable `HTSLIB` to indicate the directory of `libhts.a`.
+from (http://www.htslib.org/) with version 1.5 or higher.
+Choose a directory for installation and set the environment variable `HTSLIB` for that.
 For example, for Unix platforms, do the following:
 ```
-export HTSLIB="/directory/to/your/htslib/htslib-1.2.1"
+export HTSLIB="/directory/to/your/htslib/install"
 ```
+Use the following to build `libhts.a`:
+```
+autoheader
+autoconf
+./configure --disable-bz2 --disable-lzma --disable-gcs --disable-s3 --enable-libcurl=no --prefix=$HTSLIB
+make
+make install
+```
+
 ## Compile bamkit
 The compilation of `bamkit` requires `automake` and `autoconf` packages.
 If they have not been installed, on linux platform, do the following:
