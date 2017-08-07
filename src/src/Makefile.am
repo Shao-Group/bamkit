@@ -1,10 +1,10 @@
 bin_PROGRAMS = bamkit
 
-bamkit_CPPFLAGS = -std=c++11 -I$(HTSLIB)
+bamkit_CPPFLAGS = -std=c++11 -I$(HTSLIB)/include
 
 # static link
 bamkit_LDFLAGS = -pthread
-bamkit_LDADD = $(HTSLIB)/libhts.a -lbz2 -lz
+bamkit_LDADD = $(HTSLIB)/lib/libhts.a -lbz2 -lz
 
 bamkit_SOURCES = hit.h hit.cc \
 				 bamkit.h bamkit.cc \

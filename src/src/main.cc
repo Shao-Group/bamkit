@@ -31,7 +31,7 @@ int main(int argc, const char **argv)
 
 	if(string(argv[1]) == "count")
 	{
-		bamkit bk(argv[1]);
+		bamkit bk(argv[2]);
 		bk.solve_count();
 	}
 
