@@ -23,6 +23,7 @@ private:
 public:
 	int solve_count();
 	int solve_strand();
+	int solve_fragment();
 
 };
 

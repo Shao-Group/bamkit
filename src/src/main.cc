@@ -26,6 +26,7 @@ int main(int argc, const char **argv)
 		printf("usage: \n");
 		printf(" %s count <bam-file>\n", argv[0]);
 		printf(" %s strand <bam-file>\n", argv[0]);
+		printf(" %s fragment <bam-file>\n", argv[0]);
 		return 0;
 	}
 
@@ -39,6 +40,12 @@ int main(int argc, const char **argv)
 	{
 		bamkit bk(argv[2]);
 		bk.solve_strand();
+	}
+
+	if(string(argv[1]) == "fragment")
+	{
+		bamkit bk(argv[2]);
+		bk.solve_fragment();
 	}
 
 	return 0;
