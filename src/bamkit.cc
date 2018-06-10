@@ -152,4 +152,37 @@ int bamkit::solve_fragment()
 	return 0;
 }
 
+int bamkit::ts2XS(const string &file)
+{
+	samFile *fout = sam_open(file.c_str(), "w");
 
+	int f = sam_hdr_write(fout, hdr);
+	if(f < 0) printf("fail to write header to %s\n", file.c_str());
+	if(f < 0) exit(0);
+
+    while(sam_read1(sfn, hdr, b1t) >= 0)
+	{
+		uint8_t *p = bam_aux_get(b1t, "ts");
+
+		if((p) && (*p) == 'A')
+		{
+			char XS = '.';
+			char ts = bam_aux2A(p);
+			if(ts == '+' && (((b1t)->core.flag) & 0x10) <= 0) XS = '+';
+			if(ts == '+' && (((b1t)->core.flag) & 0x10) >= 1) XS = '-';
+			if(ts == '-' && (((b1t)->core.flag) & 0x10) <= 0) XS = '-';
+			if(ts == '-' && (((b1t)->core.flag) & 0x10) >= 1) XS = '+';
+
+			f = bam_aux_append(b1t, "XS", 'A', sizeof(XS), (uint8_t *) &XS);
+			if(f != 0) printf("fail to append XS\n");
+			if(f != 0) exit(0);
+		}
+
+		f = sam_write1(fout, hdr, b1t);
+		if(f < 0) printf("fail write alignment to %s\n", file.c_str());
+		if(f < 0) exit(0);
+	}
+
+	sam_close(fout);
+	return 0;
+}

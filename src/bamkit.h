@@ -23,8 +23,8 @@ private:
 public:
 	int solve_count();
 	int solve_strand();
-	int solve_fragment();
-
+	int solve_fragment();;
+	int ts2XS(const string &file);
 };
 
 #endif
