@@ -25,6 +25,7 @@ public:
 	int solve_strand();
 	int solve_fragment();;
 	int ts2XS(const string &file);
+	int name2to1(const string &file);
 };
 
 #endif

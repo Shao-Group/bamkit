@@ -28,6 +28,7 @@ int main(int argc, const char **argv)
 		printf(" %s strand <bam-file>\n", argv[0]);
 		printf(" %s fragment <bam-file>\n", argv[0]);
 		printf(" %s ts2XS <in-bam-file> <out-bam-file>\n", argv[0]);
+		printf(" %s name2to1 <in-bam-file> <out-bam-file>\n", argv[0]);
 		return 0;
 	}
 
@@ -53,6 +54,12 @@ int main(int argc, const char **argv)
 	{
 		bamkit bk(argv[2]);
 		bk.ts2XS(argv[3]);
+	}
+
+	if(string(argv[1]) == "name2to1")
+	{
+		bamkit bk(argv[2]);
+		bk.name2to1(argv[3]);
 	}
 
 	return 0;
