@@ -5,6 +5,7 @@
 #include <vector>
 
 #include "htslib/sam.h"
+#include "htslib/bgzf.h"
 #include "config.h"
 
 using namespace std;

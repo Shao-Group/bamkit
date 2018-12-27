@@ -189,9 +189,8 @@ int bamkit::ts2XS(const string &file)
 
 int bamkit::name2to1(const string &file)
 {
-	samFile *fout = sam_open(file.c_str(), "w");
-
-	int f = sam_hdr_write(fout, hdr);
+	BGZF *fout = bgzf_open(file.c_str(), "w");
+	int f = bam_hdr_write(fout, hdr);
 	if(f < 0) printf("fail to write header to %s\n", file.c_str());
 	if(f < 0) exit(0);
 
@@ -201,12 +200,12 @@ int bamkit::name2to1(const string &file)
 		char *qname = bam_get_qname(b1t);
 		assert(l >= 2);
 		assert(qname[l - 2] == '.');
-		if(qname[l - 1] == '2') qname[l - 1] = 1;
-		f = sam_write1(fout, hdr, b1t);
+		if(qname[l - 1] == '2') qname[l - 1] = '1';
+		f = bam_write1(fout, b1t);
 		if(f < 0) printf("fail write alignment to %s\n", file.c_str());
 		if(f < 0) exit(0);
 	}
 
-	sam_close(fout);
+	bgzf_close(fout);
 	return 0;
 }
