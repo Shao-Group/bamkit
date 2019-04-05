@@ -1,3 +1,7 @@
+# Overview 
+bamkit is a toolkit designed to analyze and process `bam/sam` files.
+More functions will be continuously added.
+
 # Installation
 To install bamkit from the source code, you need to first download/compile 
 htslib, setup the corresponding environmental variables,
@@ -29,7 +33,7 @@ sudo apt-get install autoconf
 sudo apt-get install automake
 ```
 
-bamkit might also requires other libraries, such as `libbz`, depending on
+bamkit might also requires other libraries, such as `libz`, depending on
 your system. Install them if you encounter errors when compiling.
 
 After that run the script `build.sh`, which will generate the executable file `src/src/bamkit`.
@@ -37,13 +41,21 @@ After that run the script `build.sh`, which will generate the executable file `s
 
 # Usage
 
-The usage of `bamkit` is:
+The current version of `bamkit` supports the following functionalities:
 ```
-./bamkit <count|strand> <input.bam>
+./bamkit <ts2XS> <input.bam> <output.bam>
 ```
+The `ts` tag (used in `minimap2` aligner) will be transformed into `XS` tag (used in `STAR`, `HISAT` alingers)
+	and the resuting alignments will be written to `output.bam`.
 
-When the first parameter is set as count, `bamkit` shall do a statistic about the
-number of reads and basepairs aligned in the given bam file, and report the results
-to the standard output.
-When the first parameter is set as strand, `bamkit` shall check the strandness of the
-given bam file and report the results to the standard output.
+```
+./bamkit <count> <input.bam>
+```
+A statistic will be returned about the `input.bam`, including
+the number of reads and basepairs aligned, etc.
+
+```
+./bamkit <strand> <input.bam>
+```
+A report about the strandness of the `input.bam` will be written to standard output.
+
