@@ -43,19 +43,19 @@ After that run the script `build.sh`, which will generate the executable file `s
 
 The current version of `bamkit` supports the following functionalities:
 ```
-./bamkit <ts2XS> <input.bam> <output.bam>
+./bamkit ts2XS <input.bam> <output.bam>
 ```
 The `ts` tag (used in `minimap2` aligner) will be transformed into `XS` tag (used in `STAR`, `HISAT` alingers)
 	and the resuting alignments will be written to `output.bam`.
 
 ```
-./bamkit <count> <input.bam>
+./bamkit count <input.bam>
 ```
 A statistic will be returned about the `input.bam`, including
 the number of reads and basepairs aligned, etc.
 
 ```
-./bamkit <strand> <input.bam>
+./bamkit strand <input.bam>
 ```
 A report about the strandness of the `input.bam` will be written to standard output.
 
