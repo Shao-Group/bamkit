@@ -58,3 +58,4 @@ the number of reads and basepairs aligned, etc.
 ./bamkit strand <input.bam>
 ```
 A report about the strandness of the `input.bam` will be written to standard output.
+
