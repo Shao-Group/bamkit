@@ -2,8 +2,17 @@
 #define __BAMKIT_H__
 
 #include "hit.h"
+#include <set>
+#include <algorithm>
+#include <fstream>
+#include <sstream>
+#include <assert.h>
+#include <iterator>
 
 using namespace std;
+
+typedef pair<pair<int, string>, pair<int, string> > pairPosCigar;
+typedef pair<string, pairPosCigar> rcdIdentifier;
 
 class bamkit
 {
@@ -20,12 +29,23 @@ private:
 	double qlen;		// single reads
 	vector<int> ivec;	// insert size
 
+    //evaluate aligners
+    map<pair<string,int32_t>, bool > alignEvalMap;
+    map<pair<string, int32_t>, pairPosCigar> hitIndexMap;
+    map<rcdIdentifier, pair<string, int32_t> > hitIndexRevMap;
+    set<rcdIdentifier> alignPairSet;
+
 public:
 	int solve_count();
 	int solve_strand();
 	int solve_fragment();;
 	int ts2XS(const string &file);
 	int name2to1(const string &file);
+    int alignPairEval(const string &groundtruth);
+    int bridgeEval(const string &alignerBam, const string &groundTruthBam, const string &annotation);
+
+private:
+    int alignedPairs();
 };
 
 #endif

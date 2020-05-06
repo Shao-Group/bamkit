@@ -21,7 +21,7 @@ int main(int argc, const char **argv)
 {
 	srand(time(0));
 
-	if(argc != 3 && argc != 4)
+	if(argc != 3 && argc != 4 && argc != 6)
 	{
 		printf("usage: \n");
 		printf(" %s count <bam-file>\n", argv[0]);
@@ -62,5 +62,17 @@ int main(int argc, const char **argv)
 		bk.name2to1(argv[3]);
 	}
 
+    if(string(argv[1]) == "alignPairEval")
+    {
+        bamkit bk(argv[2]);
+        bk.alignPairEval(argv[3]);
+    }
+
+    if(string(argv[1]) == "bridgeEval")
+    {
+        bamkit bk(argv[2]);
+        bk.bridgeEval(argv[3], argv[4], argv[5]);
+
+    }
 	return 0;
 }
