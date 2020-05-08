@@ -62,10 +62,10 @@ A report about the strandness of the `input.bam` will be written to standard out
 ```
 ./bamkit alignPairEval <input.bam> <groundTruth.bam>
 ```
-This command is about evaluation of aligners(like [STAR](https://github.com/alexdobin/STAR)). `input.bam` is the result of aligner and `groundTruth.bam` is ground truth based on output of [flux simulator](http://confluence.sammeth.net/display/SIM/Home). A report about the evaluation results of the aligner will be written to standard output.
+This command is about evaluation of aligners(like [STAR](https://github.com/alexdobin/STAR)). `input.bam` is the result of aligner and `groundTruth.bam` is the ground truth based on output of [flux simulator](http://confluence.sammeth.net/display/SIM/Home). Evaluation results of the aligner will be written to standard output.
 
 
 ```
 ./bamkit bridgeEval <input.coral.bam> <input.aligner.bam> <groundTruth.bam> <reference.gtf>
 ```
-This command is about evaluation of aligners and tools that bridge paired reads(like [coral](https://github.com/Shao-Group/coral)). `input.coral.bam` is the results of coral, `input.aligner.bam` is the result of aligner and `groundTruth.bam` is ground truth based on output of [flux simulator](http://confluence.sammeth.net/display/SIM/Home). A report about the evaluation results of the aligner and coral will be written to standard output.
+This command is about evaluation of aligners and tools that bridge paired reads(like [coral](https://github.com/Shao-Group/coral)). `input.coral.bam` is the result of coral, `input.aligner.bam` is the result of aligner and `groundTruth.bam` is the ground truth based on output of flux simulator. `reference.gtf` is the annotation used to simulate reads. Evaluation results of the aligner and coral will be written to standard output.
