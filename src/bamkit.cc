@@ -377,53 +377,60 @@ int bamkit::bridgeEval(const string &alignerBam, const string &groundTruthBam, c
     //fragment:[pos, rpos)
     bamkit gt(groundTruthBam);
     map< string, pair<uint32_t, string> > bridgeMap;//qname->(start, cigar)
-    map< string, pair<uint32_t, uint32_t> > fragmentMap;//qname->(start,end)
+    map< string, pair< pair<uint32_t,uint32_t>, pair<uint32_t,uint32_t> > >fragmentMap;//qname->(p1_start,p1_end, p2_start,p2_end)
     string qname;
     while(sam_read1(gt.sfn, gt.hdr, gt.b1t) >= 0)
     {
         qname = bam_get_qname(gt.b1t);
         bam1_core_t &p = gt.b1t->core;
+        hit ht(gt.b1t, 1);
         if((p.flag & 0x40) >= 1)
         {
             if(fragmentMap.find(qname) == fragmentMap.end())
-                fragmentMap[qname] = make_pair(p.pos, 0);
+                fragmentMap[qname] = make_pair(make_pair(ht.pos,ht.rpos),make_pair(0,0));
             else
-                fragmentMap[qname].first = p.pos;
+                fragmentMap[qname].first = make_pair(ht.pos, ht.rpos);
         }
         else if((p.flag & 0x80) >= 1)
         {
-            uint32_t frEnd = p.pos+(int32_t)bam_cigar2rlen(p.n_cigar, bam_get_cigar(gt.b1t));
             if(fragmentMap.find(qname) == fragmentMap.end())
-                fragmentMap[qname] = make_pair(0,frEnd);
+                fragmentMap[qname] = make_pair(make_pair(0,0),make_pair(ht.pos,ht.rpos));
             else
-                fragmentMap[qname].second = frEnd;
+                fragmentMap[qname].second = make_pair(ht.pos,ht.rpos);
         }
 
-        //printf("%s: (%d, %d)\n", qname.c_str(), fragmentMap[qname].first, fragmentMap[qname].second);
+        //printf("%s: (%d, %d)\n", qname.c_str(), fragmentMap[qname].first.first, fragmentMap[qname].second.second);
     }
 
+    map<string, bool> challengeReads;
     for(auto it = fragmentMap.begin(); it != fragmentMap.end(); it++)
     {   
+        challengeReads[it->first] = false;
         stringstream qnamess(it->first);
         string chr, locus, tr;
         getline(qnamess, chr, ':');
         getline(qnamess, locus, ':');
         getline(qnamess, tr, ':');
         //cout << tr << endl;
-        uint32_t brStart = (it->second).first, brEnd = (it->second).second;
+        uint32_t brStart = ((it->second).first).first, brEnd = ((it->second).second).second;
+        uint32_t brGapStart = ((it->second).first).second, brGapEnd = ((it->second).second).first;
         uint32_t p1 = brStart, p2 = brStart;
         //printf("Paired read: (%d, %d)\n", brStart, brEnd);
         string newCigar = "";
-        for(auto it = exonMap[tr].begin(); it != exonMap[tr].end() && p2<brEnd; it++)
+        for(auto it2 = exonMap[tr].begin(); it2 != exonMap[tr].end() && p2<brEnd; it2++)
         {
-            //printf("Exon: (%d, %d)\n", it->first, it->second);
-            if(brStart> it->second) continue;
+            //printf("Exon: (%d, %d)\n", it2->first, it2->second);
+            if(brStart>it2->second) continue;
 
-            p1 = max(p2, it->first);
+            p1 = max(p2, it2->first);
             if(p1-p2>0)
+            {
                 newCigar = newCigar+ to_string(p1-p2) + "N";
+                if(p2>brGapStart && p1<=brGapEnd)
+                    challengeReads[it->first] = true;
+            }
 
-            p2 = min(brEnd, it->second);
+            p2 = min(brEnd, it2->second);
             if(p2-p1>0)
                 newCigar = newCigar+ to_string(p2-p1)+"M";
             //printf("p1: %d; p2: %d; %s\n", p1, p2, newCigar.c_str());
@@ -436,9 +443,11 @@ int bamkit::bridgeEval(const string &alignerBam, const string &groundTruthBam, c
     uint64_t unbridged = 0, trueBrFalseAl = 0, trueBrTrueAl = 0, falseBrFalseAl = 0, falseBrTrueAl = 0;
     uint64_t unBrTrueAl = 0, unBrFalseAl = 0;
     uint64_t trueBrUnal = 0, falseBrUnal = 0, unBrUnal = 0;
+    uint64_t unBrTrueAlCha = 0,unBrFalseAlCha = 0, trueBrFalseAlCha = 0, trueBrTrueAlCha = 0, falseBrFalseAlCha = 0, falseBrTrueAlCha = 0;
     uint32_t *cigar;
     FILE * matchFile = fopen ("matchFile.txt","w");
     FILE * mismatchFile = fopen("mismatchFile.txt", "w");
+    //cout << "lib: " << library_type << endl;
     while(sam_read1(sfn, hdr, b1t) >= 0)
     {
         qname = bam_get_qname(b1t);
@@ -457,10 +466,17 @@ int bamkit::bridgeEval(const string &alignerBam, const string &groundTruthBam, c
                 if(alignEvalMap.find(key) == alignEvalMap.end())
                     unBrUnal++;
                 else if(alignEvalMap[key])
+                {
                     unBrTrueAl++;
+                    if(challengeReads[qname]) unBrTrueAlCha++;
+                }
                 else
+                {
                     unBrFalseAl++;
+                    if(challengeReads[qname]) unBrFalseAlCha++;
+                }
                 unbridged++;
+
             }
             continue;//not bridged
         }
@@ -480,13 +496,16 @@ int bamkit::bridgeEval(const string &alignerBam, const string &groundTruthBam, c
             if(alignEvalMap.find(key) == alignEvalMap.end())
                 trueBrUnal++;
             else if(alignEvalMap[key])
+            {
                 trueBrTrueAl++;
+                if(challengeReads[qname]) trueBrTrueAlCha++;
+            }
             else
             {
                 trueBrFalseAl++;
+                if(challengeReads[qname]) trueBrFalseAlCha++;
                 fprintf(matchFile, "%s:\nGT:(%d, %s)\tCoral:(HI:%d, %d, %s)\n",qname.c_str(), bridgeMap[qname].first, bridgeMap[qname].second.c_str(), ht.hi, p.pos, cigarStr.c_str());
             }
-
             cntBridgedCorrect++;
             //fprintf(matchFile, "%s:\nGT:(%d, %s)\tCoral:(HI:%d, %d, %s)\n",qname.c_str(), bridgeMap[qname].first, bridgeMap[qname].second.c_str(), ht.hi, p.pos, cigarStr.c_str());
         }
@@ -495,10 +514,15 @@ int bamkit::bridgeEval(const string &alignerBam, const string &groundTruthBam, c
             if(alignEvalMap.find(key) == alignEvalMap.end())
                 falseBrUnal++;
             else if(alignEvalMap[key])
+            {
                 falseBrTrueAl++;
+                if(challengeReads[qname]) falseBrTrueAlCha++;
+            }
             else
+            {
                 falseBrFalseAl++;
-
+                if(challengeReads[qname]) falseBrFalseAlCha++;
+            }
             //fprintf(mismatchFile, "%s:\nGT:(%d, %s)\tCoral:(HI:%d, %d, %s)\n",qname.c_str(), bridgeMap[qname].first, bridgeMap[qname].second.c_str(), ht.hi, p.pos, cigarStr.c_str());
         }
 
@@ -508,11 +532,11 @@ int bamkit::bridgeEval(const string &alignerBam, const string &groundTruthBam, c
 
     float sensitivity = 1.0*cntBridgedCorrect/cntTotalTruth;
     float precision = 1.0*cntBridgedCorrect/cntBridged;
-    printf("#pairs_in_ground_truth: %ld, #bridged_pairs: %ld, #correct_bridged_pairs:%ld\n", cntTotalTruth, cntBridged, cntBridgedCorrect);
-    printf("#Unbridged_unalign: %ld, #True_bridged_unalign: %ld, #False_bridged_unalign: %ld\n", unBrUnal, trueBrUnal, falseBrUnal);
-    printf("#Unbridged_true_align: %ld, #Unbridged_false_align: %ld\n", unBrTrueAl, unBrFalseAl);
-    printf("#True_bridged_false_align: %ld, #True_bridged_true_align: %ld\n#False_bridged_false_align: %ld, #False_bridged_true_align: %ld\n", trueBrFalseAl, trueBrTrueAl, falseBrFalseAl, falseBrTrueAl);
-    printf("Sensitivity: %.4f, Precision: %.4f\n",sensitivity, precision);
+    printf("#pairs_in_ground_truth:%ld\n#bridged_pairs:%ld\n#correct_bridged_pairs:%ld\n", cntTotalTruth, cntBridged, cntBridgedCorrect);
+    printf("#Unbridged_unalign:%ld\n#True_bridged_unalign:%ld\n#False_bridged_unalign: %ld\n", unBrUnal, trueBrUnal, falseBrUnal);
+    printf("#Unbridged_true_align:%ld(%ld)\n#Unbridged_false_align:%ld(%ld)\n", unBrTrueAl, unBrTrueAlCha, unBrFalseAl, unBrFalseAlCha);
+    printf("#True_bridged_false_align:%ld(%ld)\n#True_bridged_true_align:%ld(%ld)\n#False_bridged_false_align:%ld(%ld)\n#False_bridged_true_align:%ld(%ld)\n", trueBrFalseAl, trueBrFalseAlCha, trueBrTrueAl, trueBrTrueAlCha, falseBrFalseAl, falseBrFalseAlCha, falseBrTrueAl, falseBrTrueAlCha);
+    printf("Sensitivity:%.4f\nPrecision:%.4f\n",sensitivity, precision);
     return 0;
 }
 
