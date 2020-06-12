@@ -224,27 +224,27 @@ int bamkit::alignPairEval(const string &groundtruth)
     set_difference(alignPairSet.begin(), alignPairSet.end(), gt.alignPairSet.begin(), gt.alignPairSet.end(), inserter(wrongSet, wrongSet.begin()));
 
 
-    FILE * commonFile = fopen("common.txt", "w");
+    //FILE * commonFile = fopen("common.txt", "w");
     FILE * wrongFile = fopen("wrong.txt", "w");
     for(auto it = commonSet.begin(); it != commonSet.end(); it++)
     {
         alignEvalMap[hitIndexRevMap[*it]] = true;
-        fprintf(commonFile, "%s HI:%d\n", hitIndexRevMap[*it].first.c_str(), hitIndexRevMap[*it].second);
+        //fprintf(commonFile, "%s HI:%d\n", hitIndexRevMap[*it].first.c_str(), hitIndexRevMap[*it].second);
     }
 
     for(auto it = wrongSet.begin(); it != wrongSet.end(); it++)
     {
         fprintf(wrongFile, "%s HI:%d\n", hitIndexRevMap[*it].first.c_str(), hitIndexRevMap[*it].second);
     }
-    fclose(commonFile);
+    //fclose(commonFile);
     fclose(wrongFile);
     
     uint32_t common = commonSet.size(),unaligned = unalignedSet.size(), wrong = wrongSet.size();
     uint32_t totalGT = gt.alignPairSet.size(), totalAligner = alignPairSet.size();    
     float sensitivity = 1.0*common/totalGT;
     float precision = 1.0*common/totalAligner;
-    printf("Total of ground truth: %d, Total of aligner: %d, Unaligned: %d, True alignment: %d, False alignment:%d\n",totalGT, totalAligner, unaligned, common, wrong);
-    printf("Sensitivity: %.4f, Precision: %.4f\n", sensitivity, precision);
+    printf("Total of ground truth:%d\nTotal of aligner:%d\nTrue alignment:%d\nFalse alignment:%d\n",totalGT, totalAligner, common, wrong);
+    printf("Aligner Sensitivity:%.4f\nAligner Precision:%.4f\n", sensitivity, precision);
     return 0;
 }
 
@@ -445,8 +445,8 @@ int bamkit::bridgeEval(const string &alignerBam, const string &groundTruthBam, c
     uint64_t trueBrUnal = 0, falseBrUnal = 0, unBrUnal = 0;
     uint64_t unBrTrueAlCha = 0,unBrFalseAlCha = 0, trueBrFalseAlCha = 0, trueBrTrueAlCha = 0, falseBrFalseAlCha = 0, falseBrTrueAlCha = 0;
     uint32_t *cigar;
-    FILE * matchFile = fopen ("matchFile.txt","w");
-    FILE * mismatchFile = fopen("mismatchFile.txt", "w");
+    FILE * matchFile = fopen ("trueBrFalseAl.txt","w");
+    FILE * mismatchFile = fopen("falseBrTrueAl.txt", "w");
     //cout << "lib: " << library_type << endl;
     while(sam_read1(sfn, hdr, b1t) >= 0)
     {
@@ -517,6 +517,7 @@ int bamkit::bridgeEval(const string &alignerBam, const string &groundTruthBam, c
             {
                 falseBrTrueAl++;
                 if(challengeReads[qname]) falseBrTrueAlCha++;
+                fprintf(mismatchFile, "%s:\nGT:(%d, %s)\tCoral:(HI:%d, %d, %s)\n",qname.c_str(), bridgeMap[qname].first, bridgeMap[qname].second.c_str(), ht.hi, p.pos, cigarStr.c_str());
             }
             else
             {
@@ -533,10 +534,142 @@ int bamkit::bridgeEval(const string &alignerBam, const string &groundTruthBam, c
     float sensitivity = 1.0*cntBridgedCorrect/cntTotalTruth;
     float precision = 1.0*cntBridgedCorrect/cntBridged;
     printf("#pairs_in_ground_truth:%ld\n#bridged_pairs:%ld\n#correct_bridged_pairs:%ld\n", cntTotalTruth, cntBridged, cntBridgedCorrect);
-    printf("#Unbridged_unalign:%ld\n#True_bridged_unalign:%ld\n#False_bridged_unalign: %ld\n", unBrUnal, trueBrUnal, falseBrUnal);
+    printf("#Unbridged_unalign:%ld\n#True_bridged_unalign:%ld\n#False_bridged_unalign:%ld\n", unBrUnal, trueBrUnal, falseBrUnal);
     printf("#Unbridged_true_align:%ld(%ld)\n#Unbridged_false_align:%ld(%ld)\n", unBrTrueAl, unBrTrueAlCha, unBrFalseAl, unBrFalseAlCha);
     printf("#True_bridged_false_align:%ld(%ld)\n#True_bridged_true_align:%ld(%ld)\n#False_bridged_false_align:%ld(%ld)\n#False_bridged_true_align:%ld(%ld)\n", trueBrFalseAl, trueBrFalseAlCha, trueBrTrueAl, trueBrTrueAlCha, falseBrFalseAl, falseBrFalseAlCha, falseBrTrueAl, falseBrTrueAlCha);
-    printf("Sensitivity:%.4f\nPrecision:%.4f\n",sensitivity, precision);
+    printf("Coral Sensitivity:%.4f\nCoral Precision:%.4f\n",sensitivity, precision);
     return 0;
 }
 
+
+int bamkit::addXS(const string &file)
+{
+	samFile *fout = sam_open(file.c_str(), "w");
+
+	int f = sam_hdr_write(fout, hdr);
+	if(f < 0) printf("fail to write header to %s\n", file.c_str());
+	if(f < 0) exit(0);
+
+    library_type = FR_SECOND;
+    while(sam_read1(sfn, hdr, b1t) >= 0)
+	{
+		uint8_t *p = bam_aux_get(b1t, "XS");
+
+        if(!p || (*p) != 'A')
+        {
+            char XS = '.';
+            hit ht(b1t, 2);
+            XS = ht.strand;
+            f = bam_aux_append(b1t, "XS", 'A', sizeof(XS), (uint8_t *) &XS);
+			if(f != 0) printf("fail to append XS\n");
+			if(f != 0) exit(0);
+		}
+
+		f = sam_write1(fout, hdr, b1t);
+		if(f < 0) printf("fail write alignment to %s\n", file.c_str());
+		if(f < 0) exit(0);
+	}
+
+	sam_close(fout);
+	return 0;
+}
+
+int bamkit::splitByEnd(const string &file1, const string &file2)//by first and second segments
+{
+    samFile *fout1 = sam_open(file1.c_str(), "w");
+    samFile *fout2 = sam_open(file2.c_str(), "w");
+    
+    library_type = FR_SECOND;
+    int f = sam_hdr_write(fout1, hdr);
+	if(f < 0) printf("fail to write header to %s\n", file1.c_str());
+	if(f < 0) exit(0);
+    
+    f = sam_hdr_write(fout2, hdr);
+	if(f < 0) printf("fail to write header to %s\n", file2.c_str());
+	if(f < 0) exit(0);
+
+    while(sam_read1(sfn, hdr, b1t) >= 0)
+    {
+        bam1_core_t &p = b1t->core;
+        hit ht(b1t, 4);
+        if(((p.flag & 0x40) >= 1 && ht.strand == '+') || ((p.flag & 0x80) >= 1 && ht.strand == '-'))
+        {
+            f = sam_write1(fout1, hdr, b1t);
+		    if(f < 0) printf("fail write alignment to %s\n", file1.c_str());
+		    if(f < 0) exit(0);
+
+        }
+        else if(((p.flag & 0x40) >= 1 && ht.strand == '-') || ((p.flag & 0x80) >= 1 && ht.strand == '+'))
+        {
+            f = sam_write1(fout2, hdr, b1t);
+		    if(f < 0) printf("fail write alignment to %s\n", file2.c_str());
+		    if(f < 0) exit(0);
+
+        }
+    }
+    sam_close(fout1);
+    sam_close(fout2);
+    return 0;
+}
+
+
+int bamkit::filter2ndAlign(const string &file)
+{
+	samFile *fout = sam_open(file.c_str(), "w");
+
+	int f = sam_hdr_write(fout, hdr);
+	if(f < 0) printf("fail to write header to %s\n", file.c_str());
+	if(f < 0) exit(0);
+
+    while(sam_read1(sfn, hdr, b1t) >= 0)
+	{
+        bam1_core_t &p = b1t->core;
+
+        if((p.flag & 0x100) <=0)
+        {
+            f = sam_write1(fout, hdr, b1t);
+		    if(f < 0) printf("fail write alignment to %s\n", file.c_str());
+		    if(f < 0) exit(0);
+		}
+
+	}
+
+	sam_close(fout);
+	return 0;
+}
+
+int bamkit::splitSinglePaired(const string &file1, const string &file2)//by first and second segments
+{
+    samFile *fout1 = sam_open(file1.c_str(), "w");
+    samFile *fout2 = sam_open(file2.c_str(), "w");
+    
+    int f = sam_hdr_write(fout1, hdr);
+	if(f < 0) printf("fail to write header to %s\n", file1.c_str());
+	if(f < 0) exit(0);
+    
+    f = sam_hdr_write(fout2, hdr);
+	if(f < 0) printf("fail to write header to %s\n", file2.c_str());
+	if(f < 0) exit(0);
+
+    while(sam_read1(sfn, hdr, b1t) >= 0)
+    {
+        bam1_core_t &p = b1t->core;
+        if(p.mpos == 0)
+        {
+            f = sam_write1(fout1, hdr, b1t);
+		    if(f < 0) printf("fail write alignment to %s\n", file1.c_str());
+		    if(f < 0) exit(0);
+
+        }
+        else
+        {
+            f = sam_write1(fout2, hdr, b1t);
+		    if(f < 0) printf("fail write alignment to %s\n", file2.c_str());
+		    if(f < 0) exit(0);
+
+        }
+    }
+    sam_close(fout1);
+    sam_close(fout2);
+    return 0;
+}

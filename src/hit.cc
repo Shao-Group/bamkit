@@ -80,7 +80,7 @@ hit::hit(bam1_t *b, int depth)
 	// fetch tags
 	hi = -1;
 	uint8_t *p2 = bam_aux_get(b, "HI");
-	if(p2 && (*p2) == 'C') hi = bam_aux2i(p2);
+	if(p2 && (*p2) == 'i') hi = bam_aux2i(p2);
 
 	nh = -1;
 	uint8_t *p3 = bam_aux_get(b, "NH");

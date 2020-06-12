@@ -43,6 +43,10 @@ public:
 	int name2to1(const string &file);
     int alignPairEval(const string &groundtruth);
     int bridgeEval(const string &alignerBam, const string &groundTruthBam, const string &annotation);
+    int addXS(const string &file);
+    int splitByEnd(const string &file1, const string &file2);
+    int filter2ndAlign(const string &file);
+    int splitSinglePaired(const string &file1, const string &file2);
 
 private:
     int alignedPairs();
